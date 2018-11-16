@@ -38,7 +38,7 @@ class parameters():
 
         self.data_dir = 'data/'
         self.ckpt_dir = 'checkpoints/'
-        self.save_every =  max(1, self.num_epochs//4) # save every 500 epochs
+        self.save_every =  min(100, self.num_epochs//4) # save every 100 epochs
 
 def create_model(sess, FLAGS):
 
