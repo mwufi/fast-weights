@@ -1,4 +1,4 @@
-import cPickle
+import pickle
 import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
@@ -49,8 +49,8 @@ def create_model(sess, FLAGS):
 
     ckpt = tf.train.get_checkpoint_state(FLAGS.ckpt_dir)
     if ckpt and tf.gfile.Exists(ckpt.model_checkpoint_path):
-        print("Restoring old model parameters from %s" %
-                             ckpt.model_checkpoint_path)
+        print(("Restoring old model parameters from %s" %
+                             ckpt.model_checkpoint_path))
         fw_model.saver.restore(sess, ckpt.model_checkpoint_path)
     else:
         print("Created new model.")
@@ -64,13 +64,13 @@ def train(FLAGS):
     """
 
     # Load the train/valid datasets
-    print "Loading datasets:"
+    print("Loading datasets:")
     with open(os.path.join(FLAGS.data_dir, 'train.p'), 'rb') as f:
-        train_X, train_y = cPickle.load(f)
-        print "train_X:", np.shape(train_X), ",train_y:", np.shape(train_y)
+        train_X, train_y = pickle.load(f)
+        print("train_X:", np.shape(train_X), ",train_y:", np.shape(train_y))
     with open(os.path.join(FLAGS.data_dir, 'valid.p'), 'rb') as f:
-        valid_X, valid_y = cPickle.load(f)
-        print "valid_X:", np.shape(valid_X), ",valid_y:", np.shape(valid_y)
+        valid_X, valid_y = pickle.load(f)
+        print("valid_X:", np.shape(valid_X), ",valid_y:", np.shape(valid_y))
 
     with tf.Session() as sess:
 
@@ -84,7 +84,7 @@ def train(FLAGS):
         train_epoch_gradient_norm = []
         for train_epoch_num, train_epoch in enumerate(generate_epoch(
             train_X, train_y, FLAGS.num_epochs, FLAGS.batch_size)):
-            print "EPOCH:", train_epoch_num
+            print("EPOCH:", train_epoch_num)
 
             # Assign the learning rate
             sess.run(tf.assign(model.lr, FLAGS.learning_rate))
@@ -119,10 +119,10 @@ def train(FLAGS):
             train_epoch_loss.append(np.mean(train_batch_loss))
             train_epoch_accuracy.append(np.mean(train_batch_accuracy))
             train_epoch_gradient_norm.append(np.mean(train_batch_gradient_norm))
-            print ('Epoch: [%i/%i] time: %.4f, loss: %.7f,'
+            print(('Epoch: [%i/%i] time: %.4f, loss: %.7f,'
                     ' acc: %.7f, norm: %.7f' % (train_epoch_num, FLAGS.num_epochs,
                         time.time() - start_time, train_epoch_loss[-1],
-                        train_epoch_accuracy[-1], train_epoch_gradient_norm[-1]))
+                        train_epoch_accuracy[-1], train_epoch_gradient_norm[-1])))
 
             # Validation set
             valid_batch_loss = []
@@ -147,7 +147,7 @@ def train(FLAGS):
                     os.makedirs(FLAGS.ckpt_dir)
                 checkpoint_path = os.path.join(FLAGS.ckpt_dir,
                     "%s.ckpt" % model_name)
-                print "Saving the model."
+                print("Saving the model.")
                 model.saver.save(sess, checkpoint_path,
                                  global_step=model.global_step)
 
@@ -170,7 +170,7 @@ def train(FLAGS):
 
         # Store results for global plot
         with open('%s_results.p' % FLAGS.model_name, 'wb') as f:
-            cPickle.dump([train_epoch_accuracy, valid_epoch_accuracy,
+            pickle.dump([train_epoch_accuracy, valid_epoch_accuracy,
                 train_epoch_loss, valid_epoch_loss,
                 train_epoch_gradient_norm], f)
 
@@ -202,7 +202,7 @@ def test(FLAGS):
 
             # Load real samples
             with open(os.path.join(FLAGS.data_dir, 'train.p'), 'rb') as f:
-                train_X, train_y = cPickle.load(f)
+                train_X, train_y = pickle.load(f)
             for train_epoch_num, train_epoch in enumerate(generate_epoch(
                 train_X, train_y, 1, FLAGS.batch_size)):
                 for train_batch_num, (batch_X, batch_y) in enumerate(train_epoch):
@@ -210,8 +210,8 @@ def test(FLAGS):
                     logits = model.logits.eval(feed_dict={model.X: batch_X,
                         model.l: FLAGS.l, model.e: FLAGS.e})
 
-                    print "INPUT:", sample
-                    print "PREDICTION:", corpus[np.argmax(logits[0])]
+                    print("INPUT:", sample)
+                    print("PREDICTION:", corpus[np.argmax(logits[0])])
 
                     return
 
@@ -224,8 +224,8 @@ def test(FLAGS):
             logits = model.logits.eval(feed_dict={model.X: [X_one_hot],
                 model.l: FLAGS.l, model.e: FLAGS.e})
 
-            print "INPUT:", sample
-            print "PREDICTION:", corpus[np.argmax(logits)]
+            print("INPUT:", sample)
+            print("PREDICTION:", corpus[np.argmax(logits)])
 
 
 def plot_all():
@@ -234,13 +234,13 @@ def plot_all():
     """
 
     with open('CONTROL_results.p', 'rb') as f:
-        control_results = cPickle.load(f)
+        control_results = pickle.load(f)
     with open('RNN-LN_results.p', 'rb') as f:
-        RNN_LN_results = cPickle.load(f)
+        RNN_LN_results = pickle.load(f)
     with open('RNN-LN-FW_results.p', 'rb') as f:
-        RNN_LN_FW_results = cPickle.load(f)
+        RNN_LN_FW_results = pickle.load(f)
     with open('GRU-LN_results.p', 'rb') as f:
-        GRU_LN_results = cPickle.load(f)
+        GRU_LN_results = pickle.load(f)
 
     # Plotting accuracy
     fig = plt.figure()

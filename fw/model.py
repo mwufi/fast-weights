@@ -47,10 +47,10 @@ class fast_weights_model(object):
 
             # scale and shift for layernorm
             self.gain = tf.Variable(tf.ones(
-                [FLAGS.num_hidden_units]),
+                [1, 1, FLAGS.num_hidden_units]),
                 dtype=tf.float32)
             self.bias = tf.Variable(tf.zeros(
-                [FLAGS.num_hidden_units]),
+                [1, 1, FLAGS.num_hidden_units]),
                 dtype=tf.float32)
 
         # fast weights and hidden state initialization
@@ -66,8 +66,9 @@ class fast_weights_model(object):
         for t in range(0, FLAGS.input_dim):
 
             # hidden state (preliminary vector)
-            self.h = tf.nn.relu((tf.matmul(self.X[:, t, :], self.W_x)+self.b_x) +
-                (tf.matmul(self.h, self.W_h)))
+            key = tf.matmul(self.X[:, t, :], self.W_x)+self.b_x
+            hkey = tf.matmul(self.h, self.W_h)
+            self.h = tf.nn.relu(key + hkey)
 
             # Forward weight and layer normalization
             if FLAGS.model_name == 'RNN-LN-FW':
@@ -75,26 +76,26 @@ class fast_weights_model(object):
                 # Reshape h to use with a
                 self.h_s = tf.reshape(self.h,
                     [FLAGS.batch_size, 1, FLAGS.num_hidden_units])
+                key = tf.reshape(key, tf.shape(self.h_s))
+                hkey = tf.reshape(hkey, tf.shape(self.h_s))
 
                 # Create the fixed A for this time step
                 self.A = tf.add(tf.scalar_mul(self.l, self.A),
-                    tf.scalar_mul(self.e, tf.batch_matmul(tf.transpose(
+                    tf.scalar_mul(self.e, tf.matmul(tf.transpose(
                         self.h_s, [0, 2, 1]), self.h_s)))
 
                 # Loop for S steps
                 for _ in range(FLAGS.S):
-                    self.h_s = tf.reshape(
-                        tf.matmul(self.X[:, t, :], self.W_x)+self.b_x,
-                        tf.shape(self.h_s)) + tf.reshape(
-                        tf.matmul(self.h, self.W_h), tf.shape(self.h_s)) + \
-                        tf.batch_matmul(self.h_s, self.A)
+                    self.h_s = (key + hkey) + tf.matmul(self.h_s, self.A)
 
                     # Apply layernorm
-                    mu = tf.reduce_mean(self.h_s, reduction_indices=2) # each sample
+                    mu = tf.reduce_mean(self.h_s, reduction_indices=2, keep_dims=True) # each sample
                     sigma = tf.sqrt(tf.reduce_mean(tf.square(self.h_s - mu),
-                        reduction_indices=2))
-                    self.h_s = tf.div(tf.mul(self.gain, (self.h_s - mu)), sigma) + \
-                        self.bias
+                        reduction_indices=2, keep_dims=True))
+
+                    # this was helpful in debugging errors
+                    # print(self.h_s.get_shape(), (self.gain * (self.h_s - mu)).get_shape(), (sigma).get_shape(), (tf.div((self.gain * (self.h_s - mu)),sigma) + self.bias).get_shape())
+                    self.h_s = tf.div((self.gain * (self.h_s - mu)),sigma) + self.bias
 
                     # Apply nonlinearity
                     self.h_s = tf.nn.relu(self.h_s)
@@ -119,7 +120,7 @@ class fast_weights_model(object):
 
         # Loss
         self.loss = tf.reduce_mean(
-            tf.nn.softmax_cross_entropy_with_logits(self.logits, self.y))
+            tf.nn.softmax_cross_entropy_with_logits(logits=self.logits, labels=self.y))
 
         # Optimization
         self.lr = tf.Variable(0.0, trainable=False)
@@ -129,7 +130,7 @@ class fast_weights_model(object):
             tf.gradients(self.loss, self.trainable_vars), FLAGS.max_gradient_norm)
         optimizer = tf.train.AdamOptimizer(self.lr)
         self.update = optimizer.apply_gradients(
-            zip(self.grads, self.trainable_vars))
+            list(zip(self.grads, self.trainable_vars)))
 
         # Accuracy
         self.accuracy = tf.reduce_mean(tf.cast(tf.equal(tf.argmax(self.logits, 1),
@@ -158,10 +159,3 @@ class fast_weights_model(object):
             return outputs[0], outputs[1], outputs[2], outputs[3]
         elif forward_only:
             return outputs[0], outputs[1]
-
-
-
-
-
-
-

@@ -160,7 +160,7 @@ class gru_model(object):
             tf.gradients(self.loss, self.trainable_vars), FLAGS.max_gradient_norm)
         optimizer = tf.train.AdamOptimizer(self.lr)
         self.update = optimizer.apply_gradients(
-            zip(self.grads, self.trainable_vars))
+            list(zip(self.grads, self.trainable_vars)))
 
         # Accuracy
         self.accuracy = tf.reduce_mean(tf.cast(tf.equal(tf.argmax(self.logits, 1),

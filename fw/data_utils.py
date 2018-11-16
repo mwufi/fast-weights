@@ -1,6 +1,6 @@
 import numpy as np
 import random
-import cPickle
+import pickle
 import os
 
 """
@@ -20,14 +20,14 @@ def get_three_letters():
     Retrieve three random letters (a-z)
     without replacement.
     """
-    return np.random.choice(range(0,26), 3, replace=False)
+    return np.random.choice(list(range(0,26)), 3, replace=False)
 
 def get_three_numbers():
     """
     Retrieve three random numbers (0-9)
     with replacement.
     """
-    return np.random.choice(range(26, 26+10), 3, replace=True)
+    return np.random.choice(list(range(26, 26+10)), 3, replace=True)
 
 def create_sequence():
     """
@@ -40,15 +40,15 @@ def create_sequence():
     X = np.zeros((9))
     y = np.zeros((1))
     for i in range(0, 5, 2):
-        X[i] = letters[i/2]
-        X[i+1] = numbers[i/2]
+        X[i] = letters[i//2]
+        X[i+1] = numbers[i//2]
 
     # append ??
     X[6] = 26+10
     X[7] = 26+10
 
     # last key and respective value (y)
-    index = np.random.choice(range(0,3), 1, replace=False)
+    index = np.random.choice(list(range(0,3)), 1, replace=False)
     X[8] = letters[index]
     y = numbers[index]
 
@@ -101,21 +101,19 @@ if __name__ == '__main__':
 
     # Sampling
     sample_X, sample_y = create_sequence()
-    print "Sample:", ordinal_to_alpha([np.argmax(X) for X in sample_X]), \
-        ordinal_to_alpha([np.argmax(sample_y)])
+    print("Sample:", ordinal_to_alpha([np.argmax(X) for X in sample_X]), \
+        ordinal_to_alpha([np.argmax(sample_y)]))
 
     # Train/valid sets
     train_X, train_y = create_data(64000)
-    print "train_X:", np.shape(train_X), ",train_y:", np.shape(train_y)
+    print("train_X:", np.shape(train_X), ",train_y:", np.shape(train_y))
     valid_X, valid_y = create_data(32000)
-    print "valid_X:", np.shape(valid_X), ",valid_y:", np.shape(valid_y)
+    print("valid_X:", np.shape(valid_X), ",valid_y:", np.shape(valid_y))
 
     # Save data into pickle files
     if not os.path.exists('data'):
         os.makedirs('data')
     with open('data/train.p', 'wb') as f:
-        cPickle.dump([train_X, train_y], f)
+        pickle.dump([train_X, train_y], f)
     with open('data/valid.p', 'wb') as f:
-        cPickle.dump([valid_X, valid_y], f)
-
-
+        pickle.dump([valid_X, valid_y], f)
